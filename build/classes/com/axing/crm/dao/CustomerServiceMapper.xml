@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.axing.crm.dao.CustomerServiceMapper">
+
+	<sql id="queryConditi">
+		<where>
+			<if test="serviceType != null">
+				service_type like #{serviceType}
+			</if>
+			<if test="serviceTitle != null">
+				and service_title like #{serviceTitle}
+			</if>
+			<if test="customerName != null">
+				and cs.name like #{customerName}
+			</if>
+			
+			
+			<if test="createDate != null ">
+				<![CDATA[AND  create_date >= TO_DATE(#{createDate}, 'YYYY-MM-DD')]]> 
+			</if>
+			
+			<if test="createDate2 != null ">
+				<![CDATA[AND  create_date <= TO_DATE(#{createDate2}, 'YYYY-MM-DD')]]> 
+			</if>
+			
+			<if test="1>0">
+				and service_state like #{serviceState}
+			</if>
+		</where>
+	</sql>
+	
+	<sql id="customerServiceColumns">
+		c.id,allot_date,create_date,deal_date,deal_result,satisfy,service_deal,
+		service_request,service_state,service_title,service_type,
+		created_id,customer_id
+	</sql>
+	
+	
+	<insert id="save" parameterType="com.axing.crm.dao.CustomerServiceMapper">
+	 	insert into customer_services (id,service_type,service_title,customer_id,service_state,service_request,created_id,create_date)
+		values (crm_seq.nextval,#{serviceType},#{serviceTitle},#{customer.id},#{serviceState},#{serviceRequest},#{createdby.id},#{createDate})
+	</insert>
+	
+	<update id="update3" parameterType="com.axing.crm.entity.CustomerService">
+		update customer_services set deal_result = #{dealResult},satisfy=#{satisfy},service_state=#{serviceState}
+		where id = #{id}
+	</update>
+	
+	<update id="update2" parameterType="com.axing.crm.entity.CustomerService">
+		update customer_services set service_state = #{serviceState},service_deal = #{serviceDeal},
+									deal_date = #{dealDate}
+		where id = #{id}
+	</update>
+	
+	 <update id="update" parameterType="com.axing.crm.entity.CustomerService">
+		update customer_services 
+		set allot_id = #{allotTo.id},allot_date = #{allotDate},service_state = #{serviceState},service_request = #{serviceRequest}
+		where id = #{id}
+		
+	</update>
+	
+	<!-- <resultMap type="com.axing.crm.entity.CustomerService" id="customerServiceMap">
+		<id column="id" property="id"/>
+		<result column="allot_date" property="allotDate"/>
+		<result column="create_date" property="createDate"/>
+		<result column="deal_date" property="dealDate"/>
+		<result column="deal_result" property="dealResult"/>
+		<result column="satisfy" property="satisfy"/>
+		
+		
+		<result column="service_deal" property="serviceDeal"/>
+		<result column="service_request" property="serviceRequest"/>
+		<result column="service_state" property="serviceState"/>
+		<result column="service_title" property="serviceTitle"/>
+		<result column="service_type" property="serviceType"/>
+		
+		<result column="createBy.name" property="createBy.name"/>
+		<result column="allot.name" property="allot.name"/>
+		<result column="customer.name" property="customer.name"/>
+		
+		<collection property="user" javaType="com.axing.crm.entity.User">
+			<id column="u_id" property="id" />
+			<result column="enabled" property="enabled"/>
+			<result column="name" property="name" />
+			<result column="password" property="password" />
+			<result column="role_id" property="role.id"/>
+			<result column="salt" property="salt"/>
+		</collection>
+		
+		<collection property="customer" javaType="com.axing.crm.entity.Customer">
+			<id column="cs_id" property="customer.id"/>
+			<result column=""/>
+		</collection>
+		
+	</resultMap> -->
+	
+	<!--获取一个CustomerService对象  -->
+	<select id="get" resultType="com.axing.crm.entity.CustomerService">
+		select c.id,c.deal_date as "dealDate",deal_result as "dealResult",satisfy,service_deal as "serviceDeal",service_request,
+			service_state,service_title,service_type,created_id,
+			u.name as "createdby.name",c.create_date as "createDate",
+			u2.name as "allotTo.name",c.allot_date as "allotDate", 
+			cs.id as "cs_id",cs.name as "customer.name",u2.id as "id"    
+		from customer_services c
+			left outer join users u
+			on c.created_id = u.id
+			left outer join users u2
+			on c.allot_id = u2.id
+			left outer join customers cs
+			on c.customer_id = cs.id
+		where c.id = #{id}
+	</select>
+	
+	<select id="selectTotalNumber" resultType="long">
+		select count(c.id)
+		from customer_services c
+		left outer join customers cs
+		on c.customer_id = cs.id
+		<include refid="queryConditi"/>
+	</select>
+	
+	<!--编号，服务类型，概要，客户，创建人，创建时间，分配给，操作  -->
+	<select id="selectContent" resultType="com.axing.crm.entity.CustomerService">
+		select c.*
+		from (
+			select rownum rn,<include refid="customerServiceColumns"/>,c.allot_id as "allotTo.id",
+								cs.name as "customer.name",u1.name as "createdby.name",u2.id as "allot.id"
+			from customer_services c
+			left outer join users u1
+			on c.created_id = u1.id
+			left outer join users u2
+			on c.allot_id = u2.id
+			left outer join customers cs
+			on c.customer_id = cs.id
+			<include refid="queryConditi"/>
+			) c
+			<![CDATA[where rn >#{fromIndex} and rn <= #{endIndex}]]>
+	</select>
+	
+ 	
+	
+	
+</mapper>
