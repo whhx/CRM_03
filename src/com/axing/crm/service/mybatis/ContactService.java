@@ -1,0 +1,71 @@
+package com.axing.crm.service.mybatis;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.axing.crm.dao.ContactMapper;
+import com.axing.crm.entity.Contact;
+import com.axing.crm.orm.Page;
+
+@Service
+public class ContactService {
+
+	@Autowired
+	private ContactMapper contactMapper;
+
+	public Page<Contact> getByCostomerId(int pageNo, int pageSize, Integer id) {
+		
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("id", id);
+		
+		// 1. 创建 Page 对象 
+		Page<Contact> page = new Page<Contact>();
+		
+		// 2. 设置属性
+		page.setPageNo(pageNo);
+		page.setPageSize(pageSize);
+		
+		// 3. 总信息条数
+		long total = contactMapper.selectTotalNumber(params);
+		page.setTotal(total);
+		
+		// 4. 获取 firstIndex endIndex
+		int formIndex = (page.getNumber() - 1) * page.getSize();
+		int endIndex = formIndex + page.getSize();
+		
+		params.put("formIndex", formIndex);
+		params.put("endIndex", endIndex);
+		
+		// 5. 获取当也信息
+		List<Contact> content = contactMapper.selectContent(params);
+		
+		page.setContent(content);
+		
+		return page;
+	}
+
+	@Transactional(readOnly=false)
+	public void saveOrdUpdate(Contact contact) {
+		contactMapper.saveOrdUpdate(contact);
+	}
+	
+	@Transactional(readOnly=true)
+	public Contact getByContactId(Integer id){
+		return contactMapper.getByContactId(id);
+	}
+
+	@Transactional(readOnly=true)
+	public long getCustomerCount(Integer customerid) {
+		return contactMapper.getCustomerCount(customerid);
+	}
+
+	@Transactional(readOnly=false)
+	public void delete(Integer id) {
+		contactMapper.delete(id);
+	}
+}

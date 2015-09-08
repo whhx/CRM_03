@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.axing.crm.dao.CustomerMapper">
+ 	<!-- 插入一条新的 Customer 数据 -->
+	<insert id="saveForSuccess" parameterType="com.axing.crm.entity.Customer">
+		<selectKey order="BEFORE" keyProperty="id" resultType="_long">
+			SELECT crm_seq.nextval FROM dual
+		</selectKey>
+		INSERT INTO customers(id, name, no, state) 
+		VALUES(#{id}, #{name}, #{no}, #{state})
+	</insert> 
+	
+	<sql id="queryConditi">
+		<where>
+			<if test="name != null">
+				and c.name like #{name}
+			</if>
+			<if test="region != null">
+				and c.region = #{region}
+			</if>
+			<if test="managername != null">
+				and m.name like #{managername}
+			</if>
+			<if test="level != null">
+				and c.customer_level = #{level}
+			</if>
+			<if test="state != null">
+				and c.state = #{state}
+			</if> 
+		</where>
+	</sql>
+
+	<sql id="chanceColumns">
+		c.id, address, bank, bank_account, bankroll, chief, credit, fax,
+		licence_no, local_tax_no, c.name, national_tax_no, no, region,
+		satify, state, c.tel, turnover, websit, zip, manager_id
+	</sql>
+	
+	<!-- 修改 Customer state 状态 -->
+	<update id="delete" parameterType="com.axing.crm.entity.Customer">
+		update customers
+		set state = #{state}
+		where id = #{id}
+	</update>
+	
+	<!-- 更新 -->
+	<update id="update" parameterType="com.axing.crm.entity.Customer">
+		update customers c
+		set address=#{address}, bank=#{bank}, bank_account=#{bankAccount}, bankroll=#{bankroll}, chief=#{chief}, credit=#{credit}, fax=#{fax},
+		    licence_no=#{licenceNo}, local_tax_no=#{localTaxNo}, c.name=#{name}, national_tax_no=#{nationalTaxNo}, region=#{region},
+		    satify=#{satify}, state=#{state}, c.tel=#{tel}, turnover=#{turnover}, websit=#{websit}, zip=#{zip}, manager_id=#{manager.id}, customer_level=#{level}
+		where c.id = #{id}
+	</update>
+	
+	<!-- 获取一个 Customer -->
+	<select id="get" resultType="com.axing.crm.entity.Customer">
+		select <include refid="chanceColumns"/>, customer_level as "level", m.id as "manager.id"
+		from customers c
+		left outer join contacts m
+		on c.manager_id = m.id
+		where c.id = #{id}
+	</select>
+	
+	<!-- 总记录数 -->
+	<select id="selectTotalNumber" resultType="long">
+		select count(c.id)
+		from customers c
+		left outer join contacts m
+		on c.manager_id = m.id
+		<include refid="queryConditi"/>
+	</select>
+
+	<!-- 当前页面数据 -->
+	<select id="selectContent"  resultType="com.axing.crm.entity.Customer">
+		select <include refid="chanceColumns"/>, customer_level as "level" ,m.id as "manager.id", m.name as "manager.name"
+		from (select rownum rn, <include refid="chanceColumns"/>,customer_level, m.id as "manager.id",  m.name as "manager.name"
+			  from customers c
+			  left outer join contacts m
+			  on c.manager_id = m.id
+			  <include refid="queryConditi"/>) c
+		left outer join contacts m
+		on c.manager_id = m.id
+		<![CDATA[where rn >#{fromIndex} and rn <= #{endIndex}]]>
+	</select>
+	
+	
+</mapper>

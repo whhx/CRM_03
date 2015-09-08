@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.axing.crm.dao.CustomerDrainMapper">
+
+	<sql id="queryConditi">
+		<where>
+			<if test=" customerName != null">
+				and cm.name = #{customerName}
+			</if>
+			<if test=" managerName != null">
+				and m.name = #{managerName}
+			</if>
+		</where>
+	</sql>
+
+	<!-- 总记录数 -->
+	<select id="selectTotalNumber" resultType="long">
+		select count(c.id)
+		from customer_drains c
+		left outer join customers cm
+		on c.customer_id = cm.id
+		left outer join contacts m
+		on m.id = cm.manager_id
+		<include refid="queryConditi"/>
+	</select>
+
+	<!-- 当前页面数据 -->
+	<!-- 编号	客户名称	客户经理	上次下单时间	确认流失时间	流失原因	状态	操作 -->
+	<select id="selectContent"  resultType="com.axing.crm.entity.CustomerDrain">
+		select c.*
+		from (select rownum rn,c.id,cm.name as "customer.name",m.name as "customer.manager.name",
+		         last_order_date as "lastOrderDate",drain_date as "drainDate",
+		         reason,c.status
+			  from customer_drains c
+			  left outer join customers cm
+			  on c.customer_id = cm.id
+			  left outer join contacts m
+			  on cm.manager_id = m.id
+			  <include refid="queryConditi"/>) c
+			  
+		<![CDATA[where rn >#{fromIndex} and rn <= #{endIndex}]]>
+	</select>
+	
+	
+</mapper>
