@@ -1,0 +1,77 @@
+package com.axing.crm.service;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.axing.crm.dao.CustomerMapper;
+import com.axing.crm.entity.Contact;
+import com.axing.crm.entity.Customer;
+import com.axing.crm.entity.Dict;
+import com.axing.crm.orm.Page;
+import com.axing.crm.utils.MyBatisUtils;
+
+@Service
+public class CustomerService {
+
+	@Autowired
+	private CustomerMapper customerMapper;
+	
+	// 总计录数
+		
+	// 页面信息记录
+	@Transactional(readOnly=true)
+	public Page<Customer> getPage(Map<String , Object> params, int pageNo, int pageSize){
+		params = MyBatisUtils.getParametersStartingWith(params);
+		
+		Page<Customer> page = new Page<>();
+		page.setPageNo(pageNo);
+		page.setPageSize(pageSize);
+		
+		long total = customerMapper.selectTotalNumber(params);
+		page.setTotal(total);
+		
+		int fromIndex = (page.getNumber() - 1) * page.getSize();
+		int endIndex = fromIndex + page.getSize();
+		
+		params.put("fromIndex", fromIndex);
+		params.put("endIndex", endIndex);
+		
+		List<Customer> content = customerMapper.selectContent(params);
+		page.setContent(content);
+		
+		return page;
+	}
+
+	
+	
+	// 地区，等级 
+	@Transactional(readOnly=true)
+	public List<Dict> selectDict(String type){
+		return customerMapper.selectDict(type);
+	}
+
+	@Transactional(readOnly=true)
+	public Customer get(int id) {
+		return customerMapper.get(id);
+	}
+
+	@Transactional(readOnly=true)
+	public List<Contact> getContact() {
+		return customerMapper.getContact();
+	}
+
+	@Transactional(readOnly=false)
+	public void update(Customer customer) {
+		customerMapper.update(customer);
+	}
+
+	// 修改 Customer 状态
+	@Transactional(readOnly=false)
+	public void delete(Customer customer) {
+		customerMapper.delete(customer);
+	}
+}

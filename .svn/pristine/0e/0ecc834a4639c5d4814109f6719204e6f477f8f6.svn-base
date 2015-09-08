@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.axing.crm.dao.SalesPlanMapper">
+	
+	<sql id="queryConditi">
+		<where>
+			<if test="#{id} != null">
+				s.designee_id=#{id}
+			</if>
+			<if test="status != null">
+				and status = ${status}
+			</if>
+			<if test="custName != null">
+				and cust_name like #{custName}
+			</if>
+			<if test="title != null">
+				and title like #{title}
+			</if>
+			<if test="contact != null">
+				and contact like #{contact}
+			</if>
+		</where>
+	</sql>
+	
+	
+	<!-- <sql id="chanceColumns">
+		s.id, contact, contact_tel, create_date, cust_name, 
+			s.description, designee_date,rate, s.source, s.status, 
+			title, created_user_id as "createBy.id", designee_id as "designee.id"
+	</sql> -->
+	<sql id="chanceColumns">
+		s.id, contact, contact_tel, create_date, cust_name, 
+		s.description, designee_date, rate, source, s.status, 
+		title, created_user_id as "createBy.id", designee_id as "designee.id"
+	</sql>
+	
+	<!-- <sql id="planColumns">
+		id,plan_Date,plan_result,todo,chance_id
+	</sql> -->
+	
+	
+	<!-- <update id="update" parameterType="com.axing.crm.entity.SalesPlan">
+		update sales_plan 
+		<if test="todo == null">
+			set todo = #{todo}
+		</if>
+		<if test="todo != null">
+			set result = #{result}
+		</if>
+		where id= #{id}
+	</update> -->
+	
+	
+	<resultMap type="com.axing.crm.entity.SalesChance" id="chanceMap">
+		<id column="id" property="id"/>
+		<result column="contact" property="contact"/>
+		<result column="contact_tel" property="contactTel"/>
+		<result column="create_date" property="createDate"/>
+		<result column="cust_name" property="custName"/>
+		
+		<result column="description" property="description"/>
+		<result column="designee_date" property="designeeDate"/>
+		<result column="rate" property="rate"/>
+		<result column="source" property="source"/>
+		<result column="status" property="status"/>
+		
+		<result column="title" property="title"/>
+		<result column="createBy.id" property="createBy.id"/>
+		<result column="designee.id" property="designee.id"/>
+		<result column="createBy.name" property="createBy.name"/>
+		<result column="designee.name" property="designee.name"/>
+		
+		<collection property="salesPlans" javaType="com.axing.crm.entity.SalesPlan">
+			<id column="p_id" property="id"/>
+			<result column="todo" property="todo"/>
+			<result column="plan_date" property="date"/>
+			
+			<result column="plan_result" property="result"/>
+			<result column="chance_id" property="chance.id"/>
+		</collection>
+		
+	</resultMap>
+	
+	<select id="getChanceById" resultMap="chanceMap">
+		SELECT <include refid="chanceColumns"/>, u1.name as "createBy.name", u2.name as "designee.name",  p.id as "p_id", todo, plan_date, plan_result, chance_id
+		FROM sales_chances s
+		LEFT OUTER JOIN sales_plan p
+		ON s.id = p.chance_id
+		LEFT OUTER JOIN users u1
+		ON s.created_user_id = u1.id
+		LEFT OUTER JOIN users u2
+		ON s.designee_id = u2.id
+		WHERE s.id = #{chanceId}
+	</select>
+	
+	
+	<!-- <insert id="save" parameterType="com.axing.crm.entity.SalesPlan">
+		insert into sales_plan s (s.id,plan_date,plan_result,todo,chance_id) 
+				values(crm_seq.nextval,#{date,jdbcType=DATE},#{result},#{todo},#{chance.id,jdbcType=INTEGER})
+	</insert>
+	
+	新建/修改
+	<insert id="seveOrUpdate" parameterType="com.axing.crm.entity.SalesPlan">
+		<if test="id == null">
+			insert into sales_plan s (<include refid="planColumns"/>)
+			values(crm_seq.nextval, #{date,jdbcType=DATE}, #{result},#{todo},#{chance.id})
+		</if>
+		<if test="id != null">
+			update sales_chances s
+			set paln_Date = #{date},plan_result=#{result,jdbcType=STRING},TODO=#{TODO},chance_id=#{chance.id,jdbcType=INTEGER}
+			where id=#{id}
+		</if> 
+	</insert> -->
+	
+	<select id="get" resultType="com.axing.crm.entity.SalesChance">
+		select <include refid="chanceColumns"/>, u.name as "createBy.name", u.id as "createBy.id", r.name as "createBy.role.name"
+		from sales_chances s
+		left outer join users u
+		on s.created_user_id = u.id
+		left outer join roles r
+		on u.role_id = r.id
+		where s.id = #{id}
+	</select>
+	
+	
+	<select id="selectTotalNumber" resultType="long">
+		select count(*)
+		from sales_chances s
+		left outer join users u
+		on s.designee_id= u.id
+		<include refid="queryConditi"/>
+	</select>
+	
+	<!-- 编号	客户名称	概要	联系人	联系人电话	创建时间     状态	操作 -->
+	<select id="selectContent" resultType="com.axing.crm.entity.SalesChance">
+		select s.id, contact, contact_tel, create_date, cust_name, 
+				s.description, designee_date, rate, source, s.status, 
+				title,"createBy.id","designee.id"
+		from (
+			select rownum rn, <include refid="chanceColumns"/>
+			from sales_chances s
+			left outer join users u
+			on s.designee_id= u.id
+			<include refid="queryConditi"/>) s
+		<![CDATA[where rn >#{fromIndex} and rn <= #{endIndex}]]>
+	</select>
+	
+</mapper>

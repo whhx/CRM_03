@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.axing.crm.dao.ContactMapper">
+
+	<!-- 插入一条新的 Contact 数据  name、tel、customer_id-->
+	<insert id="saveForSuccess" parameterType="com.axing.crm.entity.Contact">
+		INSERT INTO contacts(id, name, tel, customer_id)
+		VALUES(crm_seq.nextval, #{name}, #{tel}, #{customer.id,jdbcType=INTEGER})
+	</insert>
+	
+	<sql id="chanceColumns">
+		co.id, memo, mobile, co.name, position, sex, co.tel, customer_id, 
+		c.id as "customer.id", c.no as "customer.no", c.name as "customer.name"
+	</sql>
+	
+	<delete id="delete">
+		delete from contacts
+		where id = #{id}
+	</delete>
+	
+	<!-- 获取指向同一个 Customer 的数量 -->
+	<select id="getCustomerCount" resultType="long">
+		select count(id)
+		from contacts
+		where customer_id = #{customerid}
+	</select>
+	
+	<select id="getByContactId" resultType="com.axing.crm.entity.Contact">
+		select co.id, memo, mobile, co.name, position, sex, co.tel, customer_id as "customer.id"
+		from contacts co 
+		left outer join customers c 
+		on co.customer_id = c.id 
+		where co.id = #{id}
+	</select>
+	
+	<!-- 保存 / 更新 -->
+	<insert id="saveOrdUpdate" parameterType="com.axing.crm.entity.Contact">
+		<if test="id == null">
+			insert into contacts (id, memo, mobile, name, position, sex, tel, customer_id)
+			values (crm_seq.nextval, #{memo}, #{mobile}, #{name}, #{position}, #{sex}, #{tel}, #{customer.id})
+		</if>
+		<if test="id != null">
+			update contacts 
+			set memo=#{memo}, mobile=#{mobile}, position=#{position}, sex=#{sex}, tel=#{tel}
+			where id = #{id} 
+		</if>
+	</insert>
+	
+	<select id="selectTotalNumber" resultType="long">
+		select count(co.id)
+		from  contacts co
+   	    left outer join customers c
+   	    on co.customer_id = c.id
+   	    where c.id = #{id}
+	</select>
+	
+	<select id="selectContent" resultType="com.axing.crm.entity.Contact">
+		
+		select <include refid="chanceColumns"/> 
+	    from (select rownum rn, <include refid="chanceColumns"/>
+	    	  from  contacts co
+	    	  left outer join customers c
+	    	  on co.customer_id = c.id
+	    	  where c.id = #{id}) co
+	    left outer join customers c
+	    on co.customer_id = c.id
+	    <![CDATA[where co.rn > #{formIndex} and co.rn <= #{endIndex}]]>
+	</select>
+	
+</mapper>

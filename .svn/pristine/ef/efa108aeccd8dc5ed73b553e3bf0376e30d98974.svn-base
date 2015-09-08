@@ -1,0 +1,124 @@
+package com.axing.crm.handler;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.util.WebUtils;
+
+import com.axing.crm.entity.Contact;
+import com.axing.crm.entity.Customer;
+import com.axing.crm.entity.Dict;
+import com.axing.crm.orm.Page;
+import com.axing.crm.service.CustomerService;
+import com.axing.crm.web.Servlets;
+
+@RequestMapping(value="/customer")
+@Controller
+public class CustomerHander {
+
+	@Autowired
+	private CustomerService customerService;
+	
+	@ResponseBody
+	@RequestMapping(value="/delete")
+	public String delete(@RequestParam("id") long id){
+		Customer customer = new Customer();
+		customer.setId(id);
+		customer.setState("删除");
+		int temp = -1;
+		try {
+			customerService.delete(customer);
+			temp = 1;
+		} catch (Exception e) {
+			temp = 0;
+		}
+		return "" + temp;
+	}
+	
+	
+	@RequestMapping(value="/edit",method=RequestMethod.PUT)
+	public String edit(Customer customer){
+		
+		customerService.update(customer);
+		return "redirect:/customer/list";
+	}
+	
+	@RequestMapping(value="/edit/{id}")
+	public String edit(@PathVariable("id") String idStr, Map<String, Object> map, HttpServletRequest request){
+		
+		int id = -1;
+		try {
+			id = Integer.parseInt(idStr);
+		} catch (NumberFormatException e) {}
+		
+		Customer customer = customerService.get(id);
+		map.put("customer", customer);
+
+		List<Dict> regions = customerService.selectDict("地区");
+		request.setAttribute("regions", regions);
+		
+		List<Dict> levels = customerService.selectDict("客户等级");
+		map.put("levels", levels);
+		
+		List<Dict> satify = customerService.selectDict("满意度");
+		map.put("satifys", satify);
+		
+		List<Dict> credit = customerService.selectDict("信用度");
+		map.put("credits", credit);
+		
+		List<Contact> contacts =  customerService.getContact();
+		map.put("contacts", contacts);
+		
+		return "/customer/input";
+	}
+	
+	@ModelAttribute
+	public void getCustomer(@RequestParam(value="id", required=false) Integer id, Map<String, Object> map){
+		if(id != null){
+			Customer contacts = customerService.get(id);
+			map.put("contacts", contacts);
+		}
+	}
+	
+	//===================
+	@RequestMapping(value="/list")
+	public String list(@RequestParam(value="page", required=false, defaultValue="1") String pageNoStr,
+			HttpServletRequest request){
+		int pageNo = 1;
+		try {
+			pageNo = Integer .parseInt(pageNoStr);
+		} catch (NumberFormatException e) {}
+		
+		// 获取指定查询请求 EQ_level=普通客户, EQ_region=北京, EQ_state=正常, LIKE_manager.name=2, LIKE_name=1
+		Map<String, Object> params = WebUtils.getParametersStartingWith(request, "search_");
+		
+		// 把 params 转为一个字符串，在传回页面
+		String queryString = Servlets.encodeParameterStringWithPrefix(params, "search_");
+		// search_EQ_level=普通客户&search_EQ_region=北京&search_EQ_state=正常&search_LIKE_manager.name=2&search_LIKE_name=1
+		
+		// 获取页面数据
+		Page<Customer> page = customerService.getPage(params, pageNo, 5);
+		
+		request.setAttribute("querString", queryString);
+		request.setAttribute("page", page);
+		
+		List<Dict> regions = customerService.selectDict("地区");
+		request.setAttribute("regions", regions);
+		
+		List<Dict> levels = customerService.selectDict("客户等级");
+		request.setAttribute("levels", levels);
+		
+		return "/customer/list";
+		
+	}
+}

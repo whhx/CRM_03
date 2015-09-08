@@ -1,0 +1,3 @@
+<jsp:forward page="${pageConext.request.contextPath}/WEB-INF/views/index.jsp"/>
+
+<!-- abcd -->
