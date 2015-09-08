@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<!-- 可以在例子工程中找到相应的代码，然后把里面的两个补全 -->
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <property name="cacheManager" ref="cacheManager"/> 
+        <property name="realm" ref="shiroRealm"/>
+    </bean>
+    
+	<bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+        <property name="cacheManagerConfigFile" value="classpath:ehcache-shiro.xml"/>
+    </bean>
+    
+    <!--配置自定调用 Shiro 对象 init 和 destroy 方法的 BeanPostProcessor  -->
+	 <bean id="lifecycleBeanPostProcessor" 
+	 		class="org.apache.shiro.spring.LifecycleBeanPostProcessor"/>
+
+	<!-- 配置 Shiro Filter. 该 bean 的 id 必须和 web.xml 文件中配置的 filter 的 filter-name 一致 -->
+	<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager"/>
+        <property name="loginUrl" value="/index.jsp"/>
+        <property name="successUrl" value="/success"/>
+        <property name="unauthorizedUrl" value="/403"/>
+        <property name="filterChainDefinitions">
+            <value>
+                /commons/** = anon
+                /user/images/** = anon
+                /static/** = anon
+                /index.jsp = anon
+                /user/shiro-login=anon
+                /shiro-index=anon
+                
+                /success=authc
+                
+                /shiro-logout=logout
+                
+                /shiro-logout = logout
+                /chance/** = roles[chance]
+                /dict/** = roles[dict]
+                /plan/** = roles[plan]
+                
+                
+                /** = authc
+            </value>
+        </property>
+    </bean>
+
+
+</beans>

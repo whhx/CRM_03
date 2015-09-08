@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<!-- 配置 JobDetail -->
+	<bean id="jobDetail"
+		class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="customerDrainService"></property>
+		<property name="targetMethod" value="save"></property>	
+	</bean>
+	
+	<!-- 配置 CronTrigger -->
+	<bean id="trigger"
+		class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="jobDetail"></property>
+		<property name="cronExpression" value="0 18 22 * * ?"/>	
+	</bean>
+	
+	<!-- 配置 Scheduler -->
+	<bean id="scheduler"
+		class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<!-- 加入 Trigger -->
+		<property name="triggers">
+			<array>
+				<ref bean="trigger"/>
+			</array>
+		</property>	
+		
+		<!-- 
+			可以修改 Quartz 的默认属性. 5
+			原属性位于: /org/quartz/quartz.properties
+		-->
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">5</prop>
+			</props>
+		</property>
+		
+		<!-- IOC 容器启动后多长时间才开始运行 Quartz. 默认为 IOC 容器创建好以后立即执行 -->
+		<property name="startupDelay" value="10"></property>
+	</bean>
+
+</beans>
